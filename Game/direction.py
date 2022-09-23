@@ -5,3 +5,9 @@ class Direction(Enum):
     RIGHT = 1
     DOWN = 2
     LEFT = 3
+
+class KeyDir:
+    UP = "W"
+    RIGHT = "D"
+    DOWN = "S"
+    LEFT = "A"
