@@ -1,4 +1,4 @@
-from direction import *
+from Engine.direction import *
 from collections import deque
 
 class Snake:

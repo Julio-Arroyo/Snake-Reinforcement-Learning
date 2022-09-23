@@ -1,8 +1,8 @@
 from os import times
 import numpy as np
-from snake import *
-from direction import *
-from collections import deque
+from Engine.snake import *
+from Engine.direction import *
+import random
 
 
 BOARD_DIM = 21
@@ -20,6 +20,7 @@ class Board:
         self.board = np.zeros((BOARD_DIM, BOARD_DIM))
         self.snake = Snake(BOARD_DIM // 2)  # place snake at center, with direction up
         self.time = 0
+        self.spawn_apple()
 
     def update(self, move):
         self.snake.dir = move
@@ -54,8 +55,13 @@ class Board:
         
         self.snake.head = (self.snake.head[0] + di, self.snake.head[1] + dj)
         self.board[self.snake.head[0], self.snake.head[1]] = 1
-        self.board[self.snake.tail[0], self.snake.tail[1]] = 0
-        self.snake.tail = (self.snake.tail[0] + tail_di, self.snake.tail[1] + tail_dj)
+
+        if self.snake.head == self.apple:
+            self.spawn_apple()
+            self.snake.size += 1
+        else:
+            self.board[self.snake.tail[0], self.snake.tail[1]] = 0
+            self.snake.tail = (self.snake.tail[0] + tail_di, self.snake.tail[1] + tail_dj)
 
         # record change in direction if snake is long
         if self.snake.size > 1:
@@ -65,10 +71,12 @@ class Board:
 
         self.time += 1
     
-    def render(self):
-        # TODO: implement me
-        return
-    
     def spawn_apple(self):
-        # TODO: implement me
-        return
+        while True:
+            a_i = random.randint(0, BOARD_DIM - 1)
+            a_j = random.randint(0, BOARD_DIM - 1)
+            if self.board[a_i, a_j] == 0:
+                break
+                
+        self.board[a_i, a_j] = 2
+        self.apple = (a_i, a_j)
