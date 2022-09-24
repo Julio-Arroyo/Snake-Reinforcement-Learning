@@ -1,4 +1,8 @@
 from collections import deque
+import random
+
+
+MINI_BATCH_SIZE = 32
 
 
 class Transition:
@@ -30,3 +34,9 @@ class ReplayMemory:
     
     def push(self, transition):
         self.experiences.append(transition)
+    
+    def get_mini_batch(self):
+        mini_batch = []
+        for idx in random.choices(range(len(self.experiences)), k=MINI_BATCH_SIZE):
+            mini_batch.append(self.experiences[idx])
+        return mini_batch

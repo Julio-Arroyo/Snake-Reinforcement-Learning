@@ -23,6 +23,9 @@ class Board:
         self.spawn_apple()
 
     def update(self, move):
+        """
+        Executes action move and return reward
+        """
         self.snake.dir = move
         if len(self.snake.dir_changes) > 0 and self.snake.dir_changes[0].time == self.time:
             dir_change = self.snake.dir_changes.popleft()
@@ -53,15 +56,29 @@ class Board:
         else:
             raise Exception(f"Unknown tail move: {self.snake.tail_dir}")
         
+        # out of bounds
+        if (self.snake.head[0] + di < 0 or
+            self.snake.head[0] + di >= BOARD_DIM or
+            self.snake.head[1] + dj < 0 or
+            self.snake.head[1] + dj >= 0):
+            return -1
+
         self.snake.head = (self.snake.head[0] + di, self.snake.head[1] + dj)
+
+        # snake collided with itself
+        if self.board[self.snake.head[0], self.snake.head[1]] == 1:
+            return -1
+    
         self.board[self.snake.head[0], self.snake.head[1]] = 1
 
         if self.snake.head == self.apple:
             self.spawn_apple()
             self.snake.size += 1
+            reward = 1
         else:
             self.board[self.snake.tail[0], self.snake.tail[1]] = 0
             self.snake.tail = (self.snake.tail[0] + tail_di, self.snake.tail[1] + tail_dj)
+            reward = 0
 
         # record change in direction if snake is long
         if self.snake.size > 1:
@@ -70,6 +87,7 @@ class Board:
             self.snake.tail_dir = move
 
         self.time += 1
+        return reward
     
     def spawn_apple(self):
         while True:
