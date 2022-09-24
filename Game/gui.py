@@ -9,7 +9,7 @@ TILE_SIZE = 16
 class GameEngine:
     def __init__(self):
         self.board = Board()
-        self.freq = 1  # snake movement per second
+        self.freq = 3  # snake movement per second
 
 
 def game_loop():
