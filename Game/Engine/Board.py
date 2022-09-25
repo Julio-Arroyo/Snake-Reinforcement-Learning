@@ -1,8 +1,10 @@
 from os import times
 import numpy as np
-from Engine.snake import *
-from Engine.direction import *
 import random
+# import sys
+# sys.path(0, "/media/julioarroyo/aspen/Snake-Reinforcement-Learning/Game/Engine")
+from snake import *
+from direction import *
 
 
 BOARD_DIM = 21
