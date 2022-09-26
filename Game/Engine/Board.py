@@ -19,8 +19,9 @@ class DirChange:
 class Board:
     def __init__(self):
         self.dim = BOARD_DIM
-        self.board = np.zeros((BOARD_DIM, BOARD_DIM))
+        self.board = [[0 for _ in range(BOARD_DIM)] for _ in range(BOARD_DIM)]
         self.snake = Snake(BOARD_DIM // 2)  # place snake at center, with direction up
+        self.board[self.snake.head[0]][self.snake.head[1]] = 1
         self.time = 0
         self.spawn_apple()
 
@@ -28,20 +29,30 @@ class Board:
         """
         Executes action move and return reward
         """
-        self.snake.dir = move
+        if ((not (move == Direction.RIGHT and self.snake.dir == Direction.LEFT)) and
+            (not (move == Direction.LEFT and self.snake.dir == Direction.RIGHT)) and
+            (not (move == Direction.UP and self.snake.dir == Direction.DOWN)) and
+            (not (move == Direction.DOWN and self.snake.dir == Direction.UP))):
+            self.snake.dir = move
+            # record change in direction if snake is long
+            if self.snake.size > 1:
+                self.snake.dir_changes.append(DirChange(self.time + self.snake.size - 1, self.snake.dir))
+            else:
+                self.snake.tail_dir = move
+
         if len(self.snake.dir_changes) > 0 and self.snake.dir_changes[0].time == self.time:
             dir_change = self.snake.dir_changes.popleft()
             self.snake.tail_dir = dir_change.move
         
         di = 0
         dj = 0
-        if move == Direction.UP:
+        if self.snake.dir == Direction.UP:
             di -= 1
-        elif move == Direction.DOWN:
+        elif self.snake.dir == Direction.DOWN:
             di += 1
-        elif move == Direction.RIGHT:
+        elif self.snake.dir == Direction.RIGHT:
             dj += 1
-        elif move == Direction.LEFT:
+        elif self.snake.dir == Direction.LEFT:
             dj -= 1
         else:
             raise Exception(f"Unknown move: {move}")
@@ -62,31 +73,25 @@ class Board:
         if (self.snake.head[0] + di < 0 or
             self.snake.head[0] + di >= BOARD_DIM or
             self.snake.head[1] + dj < 0 or
-            self.snake.head[1] + dj >= 0):
+            self.snake.head[1] + dj >= BOARD_DIM):
             return -1
 
         self.snake.head = (self.snake.head[0] + di, self.snake.head[1] + dj)
 
         # snake collided with itself
-        if self.board[self.snake.head[0], self.snake.head[1]] == 1:
+        if self.board[self.snake.head[0]][self.snake.head[1]] == 1:
             return -1
     
-        self.board[self.snake.head[0], self.snake.head[1]] = 1
+        self.board[self.snake.head[0]][self.snake.head[1]] = 1
 
         if self.snake.head == self.apple:
             self.spawn_apple()
             self.snake.size += 1
             reward = 1
         else:
-            self.board[self.snake.tail[0], self.snake.tail[1]] = 0
+            self.board[self.snake.tail[0]][self.snake.tail[1]] = 0
             self.snake.tail = (self.snake.tail[0] + tail_di, self.snake.tail[1] + tail_dj)
             reward = 0
-
-        # record change in direction if snake is long
-        if self.snake.size > 1:
-            self.snake.dir_changes.append(DirChange(self.time + self.snake.size - 1, move))
-        else:
-            self.snake.tail_dir = move
 
         self.time += 1
         return reward
@@ -95,8 +100,8 @@ class Board:
         while True:
             a_i = random.randint(0, BOARD_DIM - 1)
             a_j = random.randint(0, BOARD_DIM - 1)
-            if self.board[a_i, a_j] == 0:
+            if self.board[a_i][a_j] == 0:
                 break
                 
-        self.board[a_i, a_j] = 2
+        self.board[a_i][a_j] = 2
         self.apple = (a_i, a_j)

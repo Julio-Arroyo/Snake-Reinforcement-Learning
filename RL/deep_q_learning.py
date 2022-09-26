@@ -1,5 +1,6 @@
 from replay_memory import *
 from dqn_model import *
+import matplotlib.pyplot as plt
 
 import sys
 sys.path.insert(0, '/media/julioarroyo/aspen/Snake-Reinforcement-Learning/Game/Engine')
@@ -10,12 +11,13 @@ from direction import Direction
 
 N = 1000000  # capacity of replay memory
 M = 100  # number of episodes
-EPSILON = 1
+EPSILON = 0.1
 ACTION_SPACE = [Direction.UP,
                 Direction.RIGHT,
                 Direction.DOWN,
                 Direction.LEFT]
 DISCOUNT_FACTOR = 0.9  # gamma
+ANNEALING_TIME_STEPS = 1000
 
 
 # HELPER FUNCTIONS
@@ -28,9 +30,10 @@ def get_initial_state(environment):
     return state
 
 
-def select_action(Q, curr_state):
+def select_action(Q, curr_state, curr_time_step):
     x = random.random()
-    if x <= EPSILON:
+    threshold = max((-0.9/ANNEALING_TIME_STEPS)*curr_time_step + 1, EPSILON)
+    if x <= threshold:
         return random.choice(ACTION_SPACE)
     else:
         rewards = Q(curr_state)
@@ -85,6 +88,7 @@ def deep_q_learning_with_experience_replay():
     old_Q.load_state_dict(Q.state_dict())
     environment = Board()
     optimizer = torch.optim.RMSprop(Q.parameters())
+    curr_time_step = 0
 
     for ep_num in range(1, M):
         print(f"Episode #{ep_num}")
@@ -92,8 +96,16 @@ def deep_q_learning_with_experience_replay():
         time_alive = 0
         while True:
             curr_state = torch.tensor(curr_frames)
-            action = select_action(Q, curr_state)
+            action = select_action(Q, curr_state, curr_time_step)
+            print("BEFORE:")
+            print(f"Snake head: {environment.snake.head} tail: {environment.snake.tail}, size: {environment.snake.size}")
+            print(environment.board)
             reward = environment.update(action)
+            print(f"Current action: {action} led to reward: {reward} in ep: {ep_num} with time: {time_alive}.")
+            print()
+            print("AFTER:")
+            print(f"Snake head: {environment.snake.head} tail: {environment.snake.tail}, size: {environment.snake.size}")
+            print(environment.board)
 
             curr_frames.append(environment.board)
             next_state = torch.tensor(curr_frames)
@@ -104,7 +116,7 @@ def deep_q_learning_with_experience_replay():
             mini_batch = D.get_mini_batch()
             (mb_states, mb_actions, mb_rewards, mb_next_states) = stack_tensors(mini_batch)
 
-            predictions = Q(mb_states).gather(0, mb_actions)
+            predictions = Q(mb_states).gather(1, mb_actions)
 
             future_best_actions = pick_best_actions(old_Q(mb_next_states))
             future_best_actions[get_final_states_mask(mb_rewards)] = 0
@@ -126,6 +138,7 @@ def deep_q_learning_with_experience_replay():
                 print(f"Time alive: {time_alive}")
                 break
             time_alive += 1
+            curr_time_step += 1
 
 
 if __name__ == "__main__":
