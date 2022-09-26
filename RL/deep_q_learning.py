@@ -36,7 +36,8 @@ def select_action(Q, curr_state, curr_time_step):
     if x <= threshold:
         return random.choice(ACTION_SPACE)
     else:
-        rewards = Q(curr_state)
+        print(f"Not random!!!")
+        rewards = Q(curr_state.unsqueeze(0).float())
         return torch.argmax(rewards)
 
 
@@ -86,26 +87,28 @@ def deep_q_learning_with_experience_replay():
     Q = DQN()
     old_Q = DQN()
     old_Q.load_state_dict(Q.state_dict())
-    environment = Board()
     optimizer = torch.optim.RMSprop(Q.parameters())
     curr_time_step = 0
+    best_snake_size = 1
+    best_time_alive = 0
 
     for ep_num in range(1, M):
         print(f"Episode #{ep_num}")
+        environment = Board()
         curr_frames = get_initial_state(environment)
         time_alive = 0
         while True:
             curr_state = torch.tensor(curr_frames)
             action = select_action(Q, curr_state, curr_time_step)
-            print("BEFORE:")
-            print(f"Snake head: {environment.snake.head} tail: {environment.snake.tail}, size: {environment.snake.size}")
-            print(environment.board)
+            # print("BEFORE:")
+            # print(f"Snake head: {environment.snake.head} tail: {environment.snake.tail}, size: {environment.snake.size}")
+            # print(environment.board)
             reward = environment.update(action)
-            print(f"Current action: {action} led to reward: {reward} in ep: {ep_num} with time: {time_alive}.")
-            print()
-            print("AFTER:")
-            print(f"Snake head: {environment.snake.head} tail: {environment.snake.tail}, size: {environment.snake.size}")
-            print(environment.board)
+            # print(f"Current action: {action} led to reward: {reward} in ep: {ep_num} with time: {time_alive}.")
+            # print()
+            # print("AFTER:")
+            # print(f"Snake head: {environment.snake.head} tail: {environment.snake.tail}, size: {environment.snake.size}")
+            # print(environment.board)
 
             curr_frames.append(environment.board)
             next_state = torch.tensor(curr_frames)
@@ -116,15 +119,12 @@ def deep_q_learning_with_experience_replay():
             mini_batch = D.get_mini_batch()
             (mb_states, mb_actions, mb_rewards, mb_next_states) = stack_tensors(mini_batch)
 
-            predictions = Q(mb_states).gather(1, mb_actions)
+            predictions = Q(mb_states).gather(1, mb_actions).squeeze()
 
             future_best_actions = pick_best_actions(old_Q(mb_next_states))
             future_best_actions[get_final_states_mask(mb_rewards)] = 0
             targets = mb_rewards + DISCOUNT_FACTOR*future_best_actions
 
-
-            print(predictions.size())
-            print(targets.size())
             loss_func = torch.nn.MSELoss()
             loss = loss_func(predictions, targets)
 
@@ -139,6 +139,12 @@ def deep_q_learning_with_experience_replay():
                 break
             time_alive += 1
             curr_time_step += 1
+        if time_alive > best_time_alive:
+            best_time_alive = time_alive
+        if environment.snake.size > best_snake_size:
+            best_snake_size = environment.snake.size
+
+    print(f"RESULTS: best size: {best_snake_size}, best time: {best_time_alive}")
 
 
 if __name__ == "__main__":
